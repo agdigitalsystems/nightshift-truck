@@ -111,6 +111,13 @@ tr.ours td { background: color-mix(in srgb, var(--bulb) 9%, transparent); }
 .crowd td.cell b { font-size: 15px; }
 .crowd td.cell small { display: block; color: var(--muted); font-size: 11px; }
 #chart { width: 100%; height: auto; display: block; }
+#map { width: 100%; height: auto; display: block; }
+#map .ping { transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) { #map .ping { animation: ping 1.8s ease-out infinite; } }
+@keyframes ping { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(2.2); opacity: 0; } }
+.race { display: grid; gap: 6px; margin-bottom: 12px; font-size: 14px; }
+.race div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 6px; border-bottom: 1px dashed var(--line); }
+.race b { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .feed li { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 10px; font-size: 14px; }
 .feed time { color: var(--dim); font: 12px/1.5 var(--mono); }
@@ -144,9 +151,21 @@ a { color: var(--bulb); }
   </section>
 
   <section>
+    <h2>Where we're at <small id="whereNote"></small></h2>
+    <div class="grid two">
+      <div class="panel"><svg id="map" viewBox="0 0 640 360" role="img" aria-label="Campus map of where every truck parked"></svg>
+        <div class="legend" id="mapLegend"></div></div>
+      <div class="panel">
+        <div class="race" id="race"></div>
+        <div class="tablewrap"><table id="ournights"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <h2>Where should we go tomorrow? <small id="decideNote"></small></h2>
     <div class="panel tablewrap"><table class="decide" id="decide"></table>
-      <p class="note">Each spot's best order and expected profit if every rival parks where it did last night, using the customer model fitted from practice games. Smart bots drift toward empty spots, so treat a big number at an empty spot as the best case. "Alone" is the same spot with no rivals at all.</p></div>
+      <p class="note">Safe order: the best price that still keeps our customers if any rival parks here at its cheapest premium price from the last 4 days. Safe profit is what that order makes in the worst of those cases. Highest price on paper is what we'd make if nobody undercuts. Alone is the same spot with no rivals at all. Spots that were empty last night tend to fill up.</p></div>
   </section>
 
   <section>
@@ -210,7 +229,7 @@ a { color: var(--bulb); }
   </footer>
 </div>
 
-<script id="seed" type="application/json">{"live:1":{"1":{"weather":"clear","events":[],"trucks":{"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":185.15},"t_5f2743":{"name":"5 Guys","company":"Burgers & Fries","color":"#ffd23f","cash":0},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":0},"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":0},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":320},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-18.75}},"spots":{"oval":{"customers":87,"hungry":26,"trucks":[{"id":"t_96a96a","truck_name":"Wagyu Express","price":11.15,"quality":"premium","meals":90,"sold":61}]},"thompson":{"customers":62,"hungry":62,"trucks":[]},"union":{"customers":82,"hungry":34,"trucks":[{"id":"t_d64e26","truck_name":"T.H.E Truck","price":10,"quality":"standard","meals":133,"sold":48}]},"stadium":{"customers":33,"hungry":33,"trucks":[]},"highst":{"customers":139,"hungry":72,"trucks":[{"id":"t_d0c136","truck_name":"Frontrun Fries","price":12,"quality":"premium","meals":88,"sold":67}]},"northres":{"customers":66,"hungry":66,"trucks":[]}}},"2":{"weather":"rain","events":[],"trucks":{"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":422.39},"t_5f2743":{"name":"5 Guys","company":"Burgers & Fries","color":"#ffd23f","cash":227.25},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":183},"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":165},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":23},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-357.5}},"spots":{"oval":{"customers":60,"hungry":17,"trucks":[{"id":"t_e2de7d","truck_name":"IBE","price":11,"quality":"premium","meals":56,"sold":43}]},"thompson":{"customers":74,"hungry":74,"trucks":[]},"union":{"customers":75,"hungry":24,"trucks":[{"id":"t_5f2743","truck_name":"5 Guys","price":11.25,"quality":"premium","meals":63,"sold":51}]},"stadium":{"customers":25,"hungry":9,"trucks":[{"id":"t_d64e26","truck_name":"T.H.E Truck","price":10,"quality":"standard","meals":133,"sold":16}]},"highst":{"customers":93,"hungry":34,"trucks":[{"id":"t_96a96a","truck_name":"Wagyu Express","price":10.36,"quality":"premium","meals":68,"sold":59},{"id":"t_d0c136","truck_name":"Frontrun Fries","price":11.75,"quality":"premium","meals":54,"sold":0}]},"northres":{"customers":58,"hungry":19,"trucks":[{"id":"t_876b0a","truck_name":"BIg Buck","price":9.5,"quality":"standard","meals":50,"sold":39}]}}},"3":{"weather":"clear","events":[{"key":"concert","name":"Concert at the Union","spot":"union","effect":"a big crowd at the Union"}],"trucks":{"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":547.5},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":-32.25},"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":-72.61},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-86},"t_5f2743":{"name":"5 Guys","company":"Burgers & Fries","color":"#ffd23f","cash":-267.75},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":-472}},"spots":{"oval":{"customers":142,"hungry":142,"trucks":[]},"thompson":{"customers":84,"hungry":84,"trucks":[]},"union":{"customers":187,"hungry":21,"trucks":[{"id":"t_5f2743","truck_name":"5 Guys","price":11.25,"quality":"premium","meals":90,"sold":0},{"id":"t_876b0a","truck_name":"BIg Buck","price":9.5,"quality":"standard","meals":65,"sold":3},{"id":"t_96a96a","truck_name":"Wagyu Express","price":11.62,"quality":"premium","meals":90,"sold":0},{"id":"t_d0c136","truck_name":"Frontrun Fries","price":10.5,"quality":"premium","meals":90,"sold":0},{"id":"t_d64e26","truck_name":"T.H.E Truck","price":10.5,"quality":"premium","meals":90,"sold":73},{"id":"t_e2de7d","truck_name":"IBE","price":9.75,"quality":"premium","meals":90,"sold":90}]},"stadium":{"customers":53,"hungry":53,"trucks":[]},"highst":{"customers":157,"hungry":157,"trucks":[]},"northres":{"customers":99,"hungry":99,"trucks":[]}}},"4":{"weather":"cloudy","events":[],"trucks":{"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":960.75},"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":335.09},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":-43},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":-336.25},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-553.5},"t_5f2743":{"name":"Cheapest Eats","company":"Burgers & Fries","color":"#ffd23f","cash":-605.25}},"spots":{"oval":{"customers":108,"hungry":24,"trucks":[{"id":"t_5f2743","truck_name":"Cheapest Eats","price":10.75,"quality":"standard","meals":90,"sold":0},{"id":"t_d0c136","truck_name":"Frontrun Fries","price":11,"quality":"premium","meals":90,"sold":84},{"id":"t_d64e26","truck_name":"T.H.E Truck","price":11.65,"quality":"premium","meals":85,"sold":0}]},"thompson":{"customers":115,"hungry":115,"trucks":[]},"union":{"customers":144,"hungry":57,"trucks":[{"id":"t_e2de7d","truck_name":"IBE","price":10.25,"quality":"premium","meals":87,"sold":87}]},"stadium":{"customers":47,"hungry":47,"trucks":[]},"highst":{"customers":135,"hungry":32,"trucks":[{"id":"t_876b0a","truck_name":"BIg Buck","price":9.5,"quality":"standard","meals":114,"sold":13},{"id":"t_96a96a","truck_name":"Wagyu Express","price":10.03,"quality":"premium","meals":90,"sold":90}]},"northres":{"customers":82,"hungry":82,"trucks":[]}}},"5":{"weather":"clear","events":[],"trucks":{"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":1275.75},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":362},"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":-1.03},"t_5f2743":{"name":"Cheapest Eats","company":"Burgers & Fries","color":"#ffd23f","cash":-422.5},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":-610},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-909.62}},"spots":{"oval":{"customers":122,"hungry":18,"trucks":[{"id":"t_d0c136","truck_name":"Frontrun Fries","price":10,"quality":"premium","meals":90,"sold":90},{"id":"t_d64e26","truck_name":"T.H.E Truck","price":9.92,"quality":"premium","meals":90,"sold":14}]},"thompson":{"customers":106,"hungry":106,"trucks":[]},"union":{"customers":98,"hungry":98,"trucks":[]},"stadium":{"customers":61,"hungry":61,"trucks":[]},"highst":{"customers":132,"hungry":30,"trucks":[{"id":"t_96a96a","truck_name":"Wagyu Express","price":10.49,"quality":"premium","meals":84,"sold":12},{"id":"t_e2de7d","truck_name":"IBE","price":9,"quality":"premium","meals":90,"sold":90}]},"northres":{"customers":80,"hungry":21,"trucks":[{"id":"t_5f2743","truck_name":"Cheapest Eats","price":9.25,"quality":"premium","meals":66,"sold":59},{"id":"t_876b0a","truck_name":"BIg Buck","price":9.5,"quality":"standard","meals":73,"sold":0}]}}},"6":{"weather":"rain","events":[{"key":"gameday","name":"Game day","spot":"stadium","effect":"100,000 fans: a huge crowd at the Stadium and a busier campus everywhere"}],"trucks":{"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":1635.75},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":348},"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":268.07},"t_5f2743":{"name":"Cheapest Eats","company":"Burgers & Fries","color":"#ffd23f","cash":-198.9},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":-351},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-1347.77}},"spots":{"oval":{"customers":84,"hungry":84,"trucks":[]},"thompson":{"customers":71,"hungry":71,"trucks":[]},"union":{"customers":170,"hungry":33,"trucks":[{"id":"t_876b0a","truck_name":"BIg Buck","price":9.5,"quality":"standard","meals":50,"sold":47},{"id":"t_e2de7d","truck_name":"IBE","price":9.5,"quality":"premium","meals":90,"sold":90}]},"stadium":{"customers":138,"hungry":6,"trucks":[{"id":"t_96a96a","truck_name":"Wagyu Express","price":8.49,"quality":"premium","meals":90,"sold":90},{"id":"t_d0c136","truck_name":"Frontrun Fries","price":13,"quality":"premium","meals":90,"sold":37},{"id":"t_d64e26","truck_name":"T.H.E Truck","price":12.12,"quality":"standard","meals":133,"sold":5}]},"highst":{"customers":178,"hungry":178,"trucks":[]},"northres":{"customers":87,"hungry":25,"trucks":[{"id":"t_5f2743","truck_name":"Cheapest Eats","price":9.05,"quality":"standard","meals":90,"sold":62}]}}}}}</script>
+<script id="seed" type="application/json">{"live:1":{"1":{"weather":"clear","events":[],"trucks":{"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":185.15},"t_5f2743":{"name":"5 Guys","company":"Burgers & Fries","color":"#ffd23f","cash":0},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":0},"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":0},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":320},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-18.75}},"spots":{"oval":{"customers":87,"hungry":26,"trucks":[{"id":"t_96a96a","truck_name":"Wagyu Express","price":11.15,"quality":"premium","meals":90,"sold":61}]},"thompson":{"customers":62,"hungry":62,"trucks":[]},"union":{"customers":82,"hungry":34,"trucks":[{"id":"t_d64e26","truck_name":"T.H.E Truck","price":10,"quality":"standard","meals":133,"sold":48}]},"stadium":{"customers":33,"hungry":33,"trucks":[]},"highst":{"customers":139,"hungry":72,"trucks":[{"id":"t_d0c136","truck_name":"Frontrun Fries","price":12,"quality":"premium","meals":88,"sold":67}]},"northres":{"customers":66,"hungry":66,"trucks":[]}}},"2":{"weather":"rain","events":[],"trucks":{"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":422.39},"t_5f2743":{"name":"5 Guys","company":"Burgers & Fries","color":"#ffd23f","cash":227.25},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":183},"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":165},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":23},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-357.5}},"spots":{"oval":{"customers":60,"hungry":17,"trucks":[{"id":"t_e2de7d","truck_name":"IBE","price":11,"quality":"premium","meals":56,"sold":43}]},"thompson":{"customers":74,"hungry":74,"trucks":[]},"union":{"customers":75,"hungry":24,"trucks":[{"id":"t_5f2743","truck_name":"5 Guys","price":11.25,"quality":"premium","meals":63,"sold":51}]},"stadium":{"customers":25,"hungry":9,"trucks":[{"id":"t_d64e26","truck_name":"T.H.E Truck","price":10,"quality":"standard","meals":133,"sold":16}]},"highst":{"customers":93,"hungry":34,"trucks":[{"id":"t_96a96a","truck_name":"Wagyu Express","price":10.36,"quality":"premium","meals":68,"sold":59},{"id":"t_d0c136","truck_name":"Frontrun Fries","price":11.75,"quality":"premium","meals":54,"sold":0}]},"northres":{"customers":58,"hungry":19,"trucks":[{"id":"t_876b0a","truck_name":"BIg Buck","price":9.5,"quality":"standard","meals":50,"sold":39}]}}},"3":{"weather":"clear","events":[{"key":"concert","name":"Concert at the Union","spot":"union","effect":"a big crowd at the Union"}],"trucks":{"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":547.5},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":-32.25},"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":-72.61},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-86},"t_5f2743":{"name":"5 Guys","company":"Burgers & Fries","color":"#ffd23f","cash":-267.75},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":-472}},"spots":{"oval":{"customers":142,"hungry":142,"trucks":[]},"thompson":{"customers":84,"hungry":84,"trucks":[]},"union":{"customers":187,"hungry":21,"trucks":[{"id":"t_5f2743","truck_name":"5 Guys","price":11.25,"quality":"premium","meals":90,"sold":0},{"id":"t_876b0a","truck_name":"BIg Buck","price":9.5,"quality":"standard","meals":65,"sold":3},{"id":"t_96a96a","truck_name":"Wagyu Express","price":11.62,"quality":"premium","meals":90,"sold":0},{"id":"t_d0c136","truck_name":"Frontrun Fries","price":10.5,"quality":"premium","meals":90,"sold":0},{"id":"t_d64e26","truck_name":"T.H.E Truck","price":10.5,"quality":"premium","meals":90,"sold":73},{"id":"t_e2de7d","truck_name":"IBE","price":9.75,"quality":"premium","meals":90,"sold":90}]},"stadium":{"customers":53,"hungry":53,"trucks":[]},"highst":{"customers":157,"hungry":157,"trucks":[]},"northres":{"customers":99,"hungry":99,"trucks":[]}}},"4":{"weather":"cloudy","events":[],"trucks":{"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":960.75},"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":335.09},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":-43},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":-336.25},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-553.5},"t_5f2743":{"name":"Cheapest Eats","company":"Burgers & Fries","color":"#ffd23f","cash":-605.25}},"spots":{"oval":{"customers":108,"hungry":24,"trucks":[{"id":"t_5f2743","truck_name":"Cheapest Eats","price":10.75,"quality":"standard","meals":90,"sold":0},{"id":"t_d0c136","truck_name":"Frontrun Fries","price":11,"quality":"premium","meals":90,"sold":84},{"id":"t_d64e26","truck_name":"T.H.E Truck","price":11.65,"quality":"premium","meals":85,"sold":0}]},"thompson":{"customers":115,"hungry":115,"trucks":[]},"union":{"customers":144,"hungry":57,"trucks":[{"id":"t_e2de7d","truck_name":"IBE","price":10.25,"quality":"premium","meals":87,"sold":87}]},"stadium":{"customers":47,"hungry":47,"trucks":[]},"highst":{"customers":135,"hungry":32,"trucks":[{"id":"t_876b0a","truck_name":"BIg Buck","price":9.5,"quality":"standard","meals":114,"sold":13},{"id":"t_96a96a","truck_name":"Wagyu Express","price":10.03,"quality":"premium","meals":90,"sold":90}]},"northres":{"customers":82,"hungry":82,"trucks":[]}}},"5":{"weather":"clear","events":[],"trucks":{"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":1275.75},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":362},"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":-1.03},"t_5f2743":{"name":"Cheapest Eats","company":"Burgers & Fries","color":"#ffd23f","cash":-422.5},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":-610},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-909.62}},"spots":{"oval":{"customers":122,"hungry":18,"trucks":[{"id":"t_d0c136","truck_name":"Frontrun Fries","price":10,"quality":"premium","meals":90,"sold":90},{"id":"t_d64e26","truck_name":"T.H.E Truck","price":9.92,"quality":"premium","meals":90,"sold":14}]},"thompson":{"customers":106,"hungry":106,"trucks":[]},"union":{"customers":98,"hungry":98,"trucks":[]},"stadium":{"customers":61,"hungry":61,"trucks":[]},"highst":{"customers":132,"hungry":30,"trucks":[{"id":"t_96a96a","truck_name":"Wagyu Express","price":10.49,"quality":"premium","meals":84,"sold":12},{"id":"t_e2de7d","truck_name":"IBE","price":9,"quality":"premium","meals":90,"sold":90}]},"northres":{"customers":80,"hungry":21,"trucks":[{"id":"t_5f2743","truck_name":"Cheapest Eats","price":9.25,"quality":"premium","meals":66,"sold":59},{"id":"t_876b0a","truck_name":"BIg Buck","price":9.5,"quality":"standard","meals":73,"sold":0}]}}},"6":{"weather":"rain","events":[{"key":"gameday","name":"Game day","spot":"stadium","effect":"100,000 fans: a huge crowd at the Stadium and a busier campus everywhere"}],"trucks":{"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":1635.75},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":348},"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":268.07},"t_5f2743":{"name":"Cheapest Eats","company":"Burgers & Fries","color":"#ffd23f","cash":-198.9},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":-351},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-1347.77}},"spots":{"oval":{"customers":84,"hungry":84,"trucks":[]},"thompson":{"customers":71,"hungry":71,"trucks":[]},"union":{"customers":170,"hungry":33,"trucks":[{"id":"t_876b0a","truck_name":"BIg Buck","price":9.5,"quality":"standard","meals":50,"sold":47},{"id":"t_e2de7d","truck_name":"IBE","price":9.5,"quality":"premium","meals":90,"sold":90}]},"stadium":{"customers":138,"hungry":6,"trucks":[{"id":"t_96a96a","truck_name":"Wagyu Express","price":8.49,"quality":"premium","meals":90,"sold":90},{"id":"t_d0c136","truck_name":"Frontrun Fries","price":13,"quality":"premium","meals":90,"sold":37},{"id":"t_d64e26","truck_name":"T.H.E Truck","price":12.12,"quality":"standard","meals":133,"sold":5}]},"highst":{"customers":178,"hungry":178,"trucks":[]},"northres":{"customers":87,"hungry":25,"trucks":[{"id":"t_5f2743","truck_name":"Cheapest Eats","price":9.05,"quality":"standard","meals":90,"sold":62}]}}},"7":{"weather":"rain","events":[{"key":"concert","name":"Concert at the Union","spot":"union","effect":"a big crowd at the Union"}],"trucks":{"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":1618.5},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":455.5},"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":287.69},"t_5f2743":{"name":"Cheapest Eats","company":"Burgers & Fries","color":"#ffd23f","cash":57.6},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":-628.5},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-1524.02}},"spots":{"oval":{"customers":56,"hungry":4,"trucks":[{"id":"t_d0c136","truck_name":"Frontrun Fries","price":10,"quality":"premium","meals":75,"sold":52}]},"thompson":{"customers":60,"hungry":60,"trucks":[]},"union":{"customers":152,"hungry":13,"trucks":[{"id":"t_5f2743","truck_name":"Cheapest Eats","price":8.35,"quality":"premium","meals":90,"sold":90},{"id":"t_e2de7d","truck_name":"IBE","price":9.75,"quality":"premium","meals":90,"sold":49}]},"stadium":{"customers":20,"hungry":20,"trucks":[]},"highst":{"customers":78,"hungry":24,"trucks":[{"id":"t_876b0a","truck_name":"BIg Buck","price":10.5,"quality":"standard","meals":74,"sold":0},{"id":"t_96a96a","truck_name":"Wagyu Express","price":9.53,"quality":"premium","meals":90,"sold":54},{"id":"t_d64e26","truck_name":"T.H.E Truck","price":11.99,"quality":"standard","meals":47,"sold":0}]},"northres":{"customers":77,"hungry":77,"trucks":[]}}},"8":{"weather":"cloudy","events":[{"key":"midterms","name":"Midterms","spot":"thompson","effect":"Thompson is packed and stressed students treat themselves"}],"trucks":{"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":1918.5},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":131.5},"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":343.49},"t_5f2743":{"name":"Cheapest Eats","company":"Burgers & Fries","color":"#ffd23f","cash":262.8},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":-372.9},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-1854.02},"t_ca816f":{"name":"Dump Truck","company":"IDK","color":"#4ad6c4","cash":0}},"spots":{"oval":{"customers":115,"hungry":115,"trucks":[]},"thompson":{"customers":160,"hungry":7,"trucks":[{"id":"t_876b0a","truck_name":"BIg Buck","price":8.34,"quality":"premium","meals":90,"sold":90},{"id":"t_96a96a","truck_name":"Wagyu Express","price":4.99,"quality":"standard","meals":45,"sold":45},{"id":"t_d0c136","truck_name":"Frontrun Fries","price":9.5,"quality":"premium","meals":90,"sold":18},{"id":"t_d64e26","truck_name":"T.H.E Truck","price":12,"quality":"premium","meals":60,"sold":0}]},"union":{"customers":114,"hungry":34,"trucks":[{"id":"t_e2de7d","truck_name":"IBE","price":9.25,"quality":"premium","meals":80,"sold":80}]},"stadium":{"customers":48,"hungry":48,"trucks":[]},"highst":{"customers":203,"hungry":203,"trucks":[]},"northres":{"customers":99,"hungry":42,"trucks":[{"id":"t_5f2743","truck_name":"Cheapest Eats","price":9.1,"quality":"premium","meals":57,"sold":57}]}}},"9":{"weather":"cloudy","events":[{"key":"midterms","name":"Midterms","spot":"thompson","effect":"Thompson is packed and stressed students treat themselves"},{"key":"concert","name":"Concert at the Union","spot":"union","effect":"a big crowd at the Union"}],"trucks":{"t_e2de7d":{"name":"IBE","company":"Jolly","color":"#8fd16a","cash":1918.5},"t_5f2743":{"name":"Cheapest Eats","company":"Burgers & Fries","color":"#ffd23f","cash":404.04},"t_96a96a":{"name":"Wagyu Express","company":"Oriental Dishes","color":"#f2a93b","cash":343.49},"t_d0c136":{"name":"Frontrun Fries","company":"Tres Hermanos","color":"#c08cff","cash":200.5},"t_ca816f":{"name":"Dump Truck","company":"IDK","color":"#4ad6c4","cash":0},"t_876b0a":{"name":"BIg Buck","company":"BIgBuckLLC","color":"#5ec0e8","cash":-114.6},"t_d64e26":{"name":"T.H.E Truck","company":"Truck Home Eats","color":"#ff5a5f","cash":-1854.02}},"spots":{"oval":{"customers":89,"hungry":89,"trucks":[]},"thompson":{"customers":119,"hungry":29,"trucks":[{"id":"t_876b0a","truck_name":"BIg Buck","price":8.37,"quality":"premium","meals":90,"sold":90}]},"union":{"customers":130,"hungry":130,"trucks":[]},"stadium":{"customers":40,"hungry":40,"trucks":[]},"highst":{"customers":90,"hungry":43,"trucks":[{"id":"t_d0c136","truck_name":"Frontrun Fries","price":12,"quality":"premium","meals":90,"sold":47}]},"northres":{"customers":66,"hungry":15,"trucks":[{"id":"t_5f2743","truck_name":"Cheapest Eats","price":9.24,"quality":"premium","meals":60,"sold":51}]}}}}}</script>
 <script>
 (function () {
   "use strict";
@@ -547,92 +566,182 @@ a { color: var(--bulb); }
     });
     return best;
   }
-  function renderMove(s) {
-    var fc = s.forecast || {}, exp = fc.expected_customers || {}, ld = s.last_day || {};
-    var me = (s.trucks || []).filter(function (t) { return t.id === OURS; })[0] || { reputation: {} };
-    var reps = {}; (s.trucks || []).forEach(function (t) { reps[t.id] = t.reputation || {}; });
-    var day = fc.day || ((s.order_for_day || s.day || 0) + 1), daysLeft = (s.days || 48) - day;
-    var C = exp[HOME] || 0;
-    if (!C) { $("move").innerHTML = '<div class="label">The move</div><p class="why">Waiting for the next forecast from the game.</p>'; return; }
-    var prm = spotParams(HOME, fc.events || []);
-    var repAt = function (id, k) { var r = (reps[id] || {})[k]; return r == null ? 50 : r; };
-    var here = (((ld.spots || {})[HOME] || {}).trucks || []).filter(function (t) { return t.id !== OURS; });
-    var rivals = here.map(function (t) { return { q: t.quality, p: t.price, cap: t.meals, rf: repFactor(repAt(t.id, HOME)) }; });
-    var myRep = repAt(OURS, HOME);
-    var premHere = here.filter(function (t) { return t.quality === "premium"; });
-    var premPrices = [];
-    Object.keys(ld.spots || {}).forEach(function (k) { (ld.spots[k].trucks || []).forEach(function (t) { if (t.quality === "premium" && t.id !== OURS) premPrices.push(t.price); }); });
-    var invader = Math.max(8.5, Math.min(9.5, premPrices.length ? Math.min.apply(null, premPrices) : 9.25));
-    var rf = repFactor(myRep), inv = { q: "premium", p: invader, rf: 1, cap: 90 };
-    function worstOf(o) {
-      var d = allocate(C, prm, [{ q: o.q, p: o.p, rf: rf, cap: o.meals }].concat(rivals, [inv]))[0];
-      return Math.min(o.exp, o.p * d - COST[o.q] * o.meals);
-    }
-    function asPick(o, isSafe) { if (!o) return null; var x = { q: o.q, p: o.p, meals: o.meals, exp: isSafe ? o.base : o.profit }; x.worst = isSafe ? o.worst : worstOf(x); return x; }
-    var prem = asPick(safeOrder(C, prm, myRep, rivals, invader, ["premium"]), true);
-    var std = asPick(bestOrder(C, prm, myRep, rivals, ["standard"]), false);
-    var pick, alt, phase, why, nightsTo90 = Math.max(0, Math.ceil((90 - myRep) / 5));
-    if (daysLeft < 3) {
-      pick = (std && (!prem || std.exp > prem.exp)) ? std : prem; alt = pick === std ? prem : std; phase = "Endgame";
-      why = "Only " + (daysLeft + 1) + " day" + (daysLeft ? "s" : "") + " left, so reputation stops mattering. Take whichever order makes the most money.";
-    } else if (premHere.length || myRep < 90) {
-      pick = prem; alt = std; phase = premHere.length ? "Defend" : "Build reputation";
-      why = premHere.length
-        ? esc(premHere[0].truck_name) + " sold premium at North Res last night (" + price(premHere[0].price) + "). We stay premium and price to keep our customers."
-        : "Our North Res reputation is " + Math.round(myRep) + ". We sell premium (+5 a night) until it reaches 90, about " + nightsTo90 + " more night" + (nightsTo90 === 1 ? "" : "s") + ". High reputation lets us charge more and protects us when someone tries to undercut.";
-    } else {
-      pick = std; alt = prem; phase = "Cash in";
-      why = "Reputation is " + Math.round(myRep) + " and nobody sold premium here last night, so standard makes more per customer and we can cook up to 133. Switch back to premium the night a premium truck shows up.";
-    }
-    var line = function (o) { return o.q + " " + price(o.p) + " · " + o.meals + " meals"; };
-    var notes = [];
-    notes.push(Math.abs(pick.worst - pick.exp) < 15
-      ? "Safe even if a new premium truck shows up at " + price(invader) + ": we keep our customers."
-      : "If a new premium truck shows up at " + price(invader) + ", this drops to " + money(pick.worst, true) + ".");
-    if (alt) notes.push("Other option: " + line(alt) + " → " + money(alt.exp, true) + " if nobody undercuts, " + money(alt.worst, true) + " if a premium truck shows up. Reputation " + (alt.q === "premium" ? "+5" : "+2") + ".");
-    var mult = EVENT_MULT.filter(function (e) { return e.key === (fc.events || []).map(eventKey).sort().join("+"); })[0];
-    notes.push("North Res expects " + C + " people" + (mult && mult.m[HOME] ? ", " + mult.m[HOME].toFixed(1) + "× a normal night (" + mult.name + ")" : "") + ". We cook a little under the forecast because it has run high here.");
-    notes.push(here.length ? "At North Res last night: " + here.map(function (t) { return esc(t.truck_name) + " " + t.quality + " " + price(t.price) + " (sold " + t.sold + ")"; }).join(", ") + "." : "Nobody else parked at North Res last night.");
-    var bestElse = null;
-    SPOTS.forEach(function (k) {
-      if (k === HOME || !exp[k]) return;
-      var rv = (((ld.spots || {})[k] || {}).trucks || []).filter(function (t) { return t.id !== OURS; }).map(function (t) { return { q: t.quality, p: t.price, cap: t.meals, rf: repFactor(repAt(t.id, k)) }; });
-      var o = bestOrder(exp[k], spotParams(k, fc.events || []), repAt(OURS, k), rv);
-      if (o && (!bestElse || o.profit > bestElse.o.profit)) bestElse = { k: k, o: o, empty: !rv.length };
+  function repOf(reps, id, k) { var r = (reps[id] || {})[k]; return r == null ? 50 : r; }
+  function undercutters(s) {
+    var mk = marketKey(s), low = {};
+    days(mk).slice(-4).forEach(function (d) {
+      var sp = (history[mk][d] || {}).spots || {};
+      Object.keys(sp).forEach(function (k) {
+        (sp[k].trucks || []).forEach(function (t) {
+          if (t.quality === "premium" && t.id !== OURS && (low[t.id] == null || t.price < low[t.id])) low[t.id] = t.price;
+        });
+      });
     });
-    if (bestElse && bestElse.o.profit > pick.exp + 150) notes.push("Biggest number on paper: " + SPOT_NAMES[bestElse.k] + " " + money(bestElse.o.profit, true) + (bestElse.empty ? " if it stays empty. Empty spots fill fast (day 3: six trucks piled into the Union and three sold nothing)." : " if rivals stay put.") + " Full table below.");
-    $("move").innerHTML = '<div class="label">The move for day ' + day + " · " + phase + '</div><div class="order">North Res · ' + line(pick) + '</div><div class="money">Expected ' + money(pick.exp, true) + ' <span class="co">· reputation ' + (pick.q === "premium" ? "+5" : "+2") + '</span></div><p class="why">' + why + "</p><ul>" + notes.map(function (n) { return "<li>" + n + "</li>"; }).join("") + "</ul>";
+    return Object.keys(low).map(function (id) { return { id: id, p: low[id] }; }).sort(function (a, b) { return a.p - b.p; });
   }
-
-  function renderDecide(s) {
+  function robustOrder(C, prm, spot, myRep, rivals, cuts, reps, quals) {
+    var rf = repFactor(myRep), best = null, top = null;
+    (quals || ["premium", "standard"]).forEach(function (q) {
+      var cost = COST[q], maxMeals = Math.floor(500 / cost), ceil = Math.min(15, QV[q] * rf);
+      for (var c100 = Math.ceil(cost * 100) + 5; c100 <= ceil * 100 + 1e-6; c100 += 5) {
+        var p = c100 / 100;
+        var d = allocate(C, prm, [{ q: q, p: p, rf: rf, cap: 1e9 }].concat(rivals))[0];
+        var meals = Math.min(maxMeals, Math.round(d * 0.92)); if (meals <= 0) continue;
+        var exp = p * Math.min(d, meals) - cost * meals, worst = exp, who = null;
+        cuts.forEach(function (c) {
+          var others = rivals.filter(function (r) { return r.id !== c.id; });
+          var inv = { q: "premium", p: c.p, rf: repFactor(repOf(reps, c.id, spot)), cap: 90 };
+          var v = p * allocate(C, prm, [{ q: q, p: p, rf: rf, cap: meals }].concat(others, [inv]))[0] - cost * meals;
+          if (v < worst - 0.5) { worst = v; who = c; }
+        });
+        var rain = p * Math.min(allocate(C * 0.75, prm, [{ q: q, p: p, rf: rf, cap: 1e9 }].concat(rivals))[0], meals) - cost * meals;
+        var cand = { q: q, p: p, meals: meals, exp: exp, worst: worst, who: who, rain: rain };
+        if (!best || Math.round(worst) > Math.round(best.worst) || (Math.round(worst) === Math.round(best.worst) && exp > best.exp)) best = cand;
+        if (!top || exp > top.exp) top = cand;
+      }
+    });
+    if (best) best.top = top;
+    return best;
+  }
+  var planCache = { key: null, rows: null };
+  function planRows(s) {
+    var key = (s.server_time || "") + "|" + (s.phase || "");
+    if (planCache.key === key) return planCache.rows;
     var fc = s.forecast || {}, exp = fc.expected_customers || {}, ld = s.last_day || {};
-    var me = (s.trucks || []).filter(function (t) { return t.id === OURS; })[0] || { reputation: {} };
     var reps = {}; (s.trucks || []).forEach(function (t) { reps[t.id] = t.reputation || {}; });
-    var premPrices = [];
-    Object.keys(ld.spots || {}).forEach(function (k) { (ld.spots[k].trucks || []).forEach(function (t) { if (t.quality === "premium" && t.id !== OURS) premPrices.push(t.price); }); });
-    var invader = Math.max(8.5, Math.min(9.5, premPrices.length ? Math.min.apply(null, premPrices) : 9.25));
+    var cuts = undercutters(s);
     var rows = SPOTS.map(function (k) {
       var C = exp[k] || 0, prm = spotParams(k, fc.events || []);
       var riv = (((ld.spots || {})[k] || {}).trucks || []).filter(function (t) { return t.id !== OURS; });
-      var rivals = riv.map(function (t) { return { q: t.quality, p: t.price, cap: t.meals, rf: repFactor((reps[t.id] || {})[k] == null ? 50 : reps[t.id][k]) }; });
-      var myRep = (me.reputation || {})[k] == null ? 50 : me.reputation[k];
-      return { k: k, C: C, riv: riv, myRep: myRep, best: bestOrder(C, prm, myRep, rivals), alone: bestOrder(C, prm, myRep, []), safe: safeOrder(C, prm, myRep, rivals, invader) };
+      var rivals = riv.map(function (t) { return { id: t.id, q: t.quality, p: t.price, cap: t.meals, rf: repFactor(repOf(reps, t.id, k)) }; });
+      var myRep = repOf(reps, OURS, k);
+      return { k: k, C: C, prm: prm, riv: riv, rivals: rivals, myRep: myRep, alone: C ? bestOrder(C, prm, myRep, []) : null, safe: C ? robustOrder(C, prm, k, myRep, rivals, cuts, reps) : null };
     });
-    var top = rows.slice().sort(function (a, b) { return (b.best ? b.best.profit : -1e9) - (a.best ? a.best.profit : -1e9); })[0];
-    var h = '<thead><tr><th>Spot</th><th class="num">Crowd tomorrow</th><th>Rivals last night</th><th class="num">Our rep</th><th>Best order</th><th class="num">Expected profit</th><th>Safe pick (if a premium truck undercuts)</th><th class="num">Alone</th></tr></thead><tbody>';
-    rows.sort(function (a, b) { return (b.best ? b.best.profit : -1e9) - (a.best ? a.best.profit : -1e9); }).forEach(function (r) {
-      var b = r.best;
+    planCache = { key: key, rows: rows, cuts: cuts, reps: reps };
+    return rows;
+  }
+  function qtag(q) { return '<span class="q ' + q + '">' + q + "</span>"; }
+
+  function renderMove(s) {
+    var fc = s.forecast || {}, exp = fc.expected_customers || {};
+    var names = {}; (s.trucks || []).forEach(function (t) { names[t.id] = t.truck_name; });
+    var day = fc.day || ((s.order_for_day || s.day || 0) + 1), daysLeft = (s.days || 48) - day;
+    var C = exp[HOME] || 0;
+    if (!C) { $("move").innerHTML = '<div class="label">The move</div><p class="why">Waiting for the next forecast from the game.</p>'; return; }
+    var rows = planRows(s), cuts = planCache.cuts, reps = planCache.reps;
+    var home = rows.filter(function (r) { return r.k === HOME; })[0];
+    var myRep = home.myRep, premHere = home.riv.filter(function (t) { return t.quality === "premium"; });
+    var nightsTo90 = Math.max(0, Math.ceil((90 - myRep) / 5)), phase, why, quals;
+    if (daysLeft < 3) {
+      quals = ["premium", "standard"]; phase = "Endgame";
+      why = "Only " + (daysLeft + 1) + " day" + (daysLeft ? "s" : "") + " left, so reputation stops mattering. Take the safe order that makes the most money.";
+    } else if (premHere.length || myRep < 90) {
+      quals = ["premium"]; phase = premHere.length ? "Defend" : "Build reputation";
+      why = premHere.length
+        ? esc(premHere[0].truck_name) + " sold premium at North Res last night (" + price(premHere[0].price) + "). We stay premium and price to keep our customers."
+        : "Our North Res reputation is " + Math.round(myRep) + ". We sell premium (+5 a night) until it reaches 90, about " + nightsTo90 + " more night" + (nightsTo90 === 1 ? "" : "s") + ". Then we switch to standard, which makes more per meal.";
+    } else {
+      quals = ["standard"]; phase = "Cash in";
+      why = "Reputation is " + Math.round(myRep) + ", so standard beats normal premium trucks here and costs $1.75 less to make. Switch back to premium the night a premium truck parks here.";
+    }
+    var pick = robustOrder(C, home.prm, HOME, myRep, home.rivals, cuts, reps, quals);
+    var line = function (o) { return o.q + " " + price(o.p) + " · " + o.meals + " meals"; };
+    var notes = [];
+    if (pick.who) notes.push("If " + esc(names[pick.who.id] || "a rival") + " shows up at " + price(pick.who.p) + ", this drops to " + money(pick.worst, true) + ". No price here fully avoids that.");
+    else if (cuts.length) notes.push("Safe if a rival undercuts: " + cuts.slice(0, 3).map(function (c) { return esc(names[c.id] || "?") + " at " + price(c.p); }).join(", ") + " (their cheapest premium in the last 4 days) still can’t take our customers.");
+    var tp = pick.top;
+    if (tp && tp.p > pick.p + 0.01 && tp.exp > pick.exp + 1 && tp.who) notes.push("Why not higher: " + line(tp) + " makes " + money(tp.exp, true) + " if nobody undercuts, but " + money(tp.worst, true) + " if " + esc(names[tp.who.id] || "a rival") + " shows up at " + price(tp.who.p) + ".");
+    var rainP = (fc.weather || {}).rain;
+    notes.push("If it rains" + (rainP != null ? " (" + Math.round(rainP * 100) + "% chance)" : "") + ": about " + money(pick.rain, true) + ", since rain cuts crowds by about a quarter.");
+    var mult = EVENT_MULT.filter(function (e) { return e.key === (fc.events || []).map(eventKey).sort().join("+"); })[0];
+    notes.push("North Res expects " + C + " people" + (mult && mult.m[HOME] ? ", " + mult.m[HOME].toFixed(1) + "× a normal night (" + mult.name + ")" : "") + ". The forecast has run high here, so we cook a little under it.");
+    notes.push(home.riv.length ? "At North Res last night: " + home.riv.map(function (t) { return esc(t.truck_name) + " " + t.quality + " " + price(t.price) + " (sold " + t.sold + ")"; }).join(", ") + "." : "Nobody else parked at North Res last night.");
+    var other = rows.filter(function (r) { return r.k !== HOME && r.safe; }).sort(function (a, b) { return b.safe.worst - a.safe.worst; })[0];
+    if (other && other.safe.worst > pick.worst + 40) notes.push("Best safe option elsewhere: " + SPOT_NAMES[other.k] + " " + line(other.safe) + " → " + money(other.safe.exp, true) + ". Full table below.");
+    $("move").innerHTML = '<div class="label">The move for day ' + day + " · " + phase + '</div><div class="order">North Res · ' + line(pick) + '</div><div class="money">Expected ' + money(pick.exp, true) + ' <span class="co">· reputation ' + (pick.q === "premium" ? "+5" : "+2") + '</span></div><p class="why">' + why + "</p><ul>" + notes.map(function (n) { return "<li>" + n + "</li>"; }).join("") + "</ul>";
+  }
+
+  var MAP_POS = { northres: [420, 66], highst: [526, 140], union: [468, 272], oval: [318, 196], thompson: [190, 272], stadium: [86, 160] };
+  function truckTags(trucks) {
+    var m = {}, used = {};
+    trucks.forEach(function (t) {
+      var a = String(t.truck_name || "?").replace(/[^A-Za-z0-9]/g, "").toUpperCase(), k = a.charAt(0) || "?";
+      if (used[k]) k = a.slice(0, 2); used[k] = 1; m[t.id] = t.id === OURS ? "US" : k;
+    });
+    return m;
+  }
+  function renderWhere(s) {
+    var ld = s.last_day || {}, sp = ld.spots || {}, colors = {};
+    var live = (s.trucks || []).filter(function (t) { return t.truck_name !== "deleted team"; });
+    live.forEach(function (t) { colors[t.id] = t.color; });
+    var tags = truckTags(live), ourSpot = null;
+    var g = '<rect x="596" y="8" width="30" height="344" rx="8" fill="rgba(255,255,255,0.04)" stroke="#262d57"/>' +
+      '<text x="611" y="180" fill="#5f648a" font-size="11" font-family="IBM Plex Mono, monospace" letter-spacing="2" text-anchor="middle" transform="rotate(-90 611 180)">HIGH ST</text>';
+    SPOTS.forEach(function (k) {
+      var pos = MAP_POS[k], info = sp[k] || { customers: 0, trucks: [] }, trucks = info.trucks || [];
+      var r = 24 + Math.min(26, (info.customers || 0) / 7);
+      var ours = trucks.some(function (t) { return t.id === OURS; }); if (ours) ourSpot = k;
+      g += '<circle cx="' + pos[0] + '" cy="' + pos[1] + '" r="' + r.toFixed(1) + '" fill="' + (ours ? "rgba(255,201,107,0.16)" : trucks.length ? "rgba(143,179,255,0.08)" : "rgba(255,255,255,0.03)") +
+        '" stroke="' + (ours ? "#ffc96b" : "#262d57") + '" stroke-width="' + (ours ? 2 : 1) + '"' + (trucks.length ? "" : ' stroke-dasharray="4 4"') + "/>";
+      g += '<text x="' + pos[0] + '" y="' + (pos[1] + 6) + '" fill="#eceaf4" font-size="18" font-weight="700" font-family="IBM Plex Mono, monospace" text-anchor="middle">' + (info.customers || 0) + "</text>";
+      g += '<text x="' + pos[0] + '" y="' + (pos[1] + r + 17).toFixed(1) + '" fill="' + (ours ? "#ffc96b" : "#9196bb") + '" font-size="12" font-weight="600" font-family="IBM Plex Mono, monospace" letter-spacing="1" text-anchor="middle">' + SPOT_NAMES[k].toUpperCase() + "</text>";
+      var n = trucks.length;
+      trucks.forEach(function (t, i) {
+        var me = t.id === OURS, ang = (-90 + (i - (n - 1) / 2) * 40) * Math.PI / 180, rr = r + (me ? 14 : 11);
+        var x = (pos[0] + Math.cos(ang) * rr).toFixed(1), y = pos[1] + Math.sin(ang) * rr, col = esc(colors[t.id] || "#888888");
+        if (me) g += '<circle class="ping" cx="' + x + '" cy="' + y.toFixed(1) + '" r="11" fill="none" stroke="' + col + '" stroke-width="2"/>';
+        g += '<circle cx="' + x + '" cy="' + y.toFixed(1) + '" r="' + (me ? 11 : 8) + '" fill="' + col + '" stroke="' + (me ? "#ffffff" : "#090b14") + '" stroke-width="2"><title>' + esc(t.truck_name) + " · " + t.quality + " " + price(t.price) + " · sold " + t.sold + "/" + t.meals + "</title></circle>";
+        g += '<text x="' + x + '" y="' + (y + 3.2).toFixed(1) + '" fill="#0b0d17" font-size="9" font-weight="700" font-family="IBM Plex Mono, monospace" text-anchor="middle" pointer-events="none">' + esc(tags[t.id] || "?") + "</text>";
+      });
+    });
+    $("map").innerHTML = g;
+    $("mapLegend").innerHTML = live.map(function (t) { return '<span style="--c:' + esc(t.color) + '">' + esc(tags[t.id]) + " = " + esc(t.truck_name) + "</span>"; }).join("");
+    var rows = standingsRows(s), idx = -1;
+    rows.forEach(function (r, i) { if (r.t.id === OURS) idx = i; });
+    var race = "";
+    if (idx >= 0) {
+      var me = rows[idx];
+      race += "<div><span>Our rank</span><b>" + me.rank + " of " + rows.length + " · " + money(me.t.cash) + "</b></div>";
+      if (idx > 1) race += "<div><span>Leader: " + esc(rows[0].t.truck_name) + "</span><b>" + money(rows[0].t.cash - me.t.cash) + " ahead</b></div>";
+      if (idx > 0) race += "<div><span>Next truck up: " + esc(rows[idx - 1].t.truck_name) + "</span><b>" + money(rows[idx - 1].t.cash - me.t.cash) + " ahead</b></div>";
+      if (idx < rows.length - 1) race += "<div><span>Right behind us: " + esc(rows[idx + 1].t.truck_name) + "</span><b>" + money(me.t.cash - rows[idx + 1].t.cash) + " back</b></div>";
+    }
+    $("race").innerHTML = race;
+    var mk = marketKey(s), ds = days(mk).slice().reverse();
+    var h = '<thead><tr><th>Day</th><th>Where</th><th>Order</th><th class="num">Sold</th><th class="num">Profit</th><th class="num">Rank</th></tr></thead><tbody>';
+    ds.forEach(function (d) {
+      var day = history[mk][d], mine = null, where = null;
+      Object.keys(day.spots || {}).forEach(function (k) { (day.spots[k].trucks || []).forEach(function (t) { if (t.id === OURS) { mine = t; where = k; } }); });
+      var tr = day.trucks || {}, ids = Object.keys(tr).sort(function (a, b) { return tr[b].cash - tr[a].cash; }), rank = ids.indexOf(OURS) + 1;
+      var pf = mine ? profitOf(mine) : 0;
+      h += "<tr><td>Day " + d + "</td><td>" + (where ? SPOT_NAMES[where] : '<span class="co">sat out</span>') + "</td><td>" + (mine ? qtag(mine.quality) + " " + price(mine.price) : "—") +
+        '</td><td class="num">' + (mine ? mine.sold + "/" + mine.meals : "—") + '</td><td class="num ' + (pf > 0 ? "pos" : pf < 0 ? "neg" : "") + '">' + (mine ? money(pf, true) : "—") +
+        '</td><td class="num">' + (rank || "—") + "</td></tr>";
+    });
+    $("ournights").innerHTML = h + "</tbody>";
+    $("whereNote").textContent = ld.day ? "day " + ld.day + (ourSpot ? " · we parked at " + SPOT_NAMES[ourSpot] : " · we sat out") + " · circle size is the crowd" : "";
+  }
+
+  function renderDecide(s) {
+    var fc = s.forecast || {}, names = {};
+    (s.trucks || []).forEach(function (t) { names[t.id] = t.truck_name; });
+    var rows = planRows(s).slice().sort(function (a, b) { return (b.safe ? b.safe.worst : -1e9) - (a.safe ? a.safe.worst : -1e9); });
+    var top = rows[0];
+    var h = '<thead><tr><th>Spot</th><th class="num">Crowd tomorrow</th><th>Rivals last night</th><th class="num">Our rep</th><th>Safe order</th><th class="num">Safe profit</th><th>Highest price on paper</th><th class="num">Alone</th></tr></thead><tbody>';
+    rows.forEach(function (r) {
+      var sf = r.safe, tp = sf && sf.top;
       var riv = r.riv.length ? r.riv.map(function (t) { return esc(t.truck_name) + " " + t.quality + " " + price(t.price); }).join(" · ") : "none";
       h += '<tr class="' + (r === top ? "best" : "") + '"><td>' + SPOT_NAMES[r.k] + (r.k === HOME ? '<span class="tag home">home</span>' : "") + (r === top ? '<span class="tag top">top</span>' : "") + "</td>" +
         '<td class="num">' + r.C + '</td><td class="riv">' + riv + '</td><td class="num">' + Math.round(r.myRep) + "</td>" +
-        "<td>" + (b ? '<span class="q ' + b.q + '">' + b.q + "</span> " + price(b.p) + " · " + b.meals + " meals · ~" + Math.round(b.buyers) + " buyers" : "—") + "</td>" +
-        '<td class="pf ' + (b && b.profit >= 0 ? "pos" : "neg") + '">' + (b ? money(b.profit, true) : "—") + "</td>" +
-        "<td>" + (r.safe ? '<span class="q ' + r.safe.q + '">' + r.safe.q + "</span> " + price(r.safe.p) + " · " + r.safe.meals + ' meals <span class="co">worst ' + money(r.safe.worst, true) + "</span>" : "—") + "</td>" +
+        "<td>" + (sf ? qtag(sf.q) + " " + price(sf.p) + " · " + sf.meals + " meals" : "—") + "</td>" +
+        '<td class="pf ' + (sf && sf.worst >= 0 ? "pos" : "neg") + '">' + (sf ? money(sf.worst, true) : "—") + "</td>" +
+        "<td>" + (tp ? qtag(tp.q) + " " + price(tp.p) + " → " + money(tp.exp, true) + ' <span class="co">worst ' + money(tp.worst, true) + "</span>" : "—") + "</td>" +
         '<td class="num">' + (r.alone ? money(r.alone.profit, true) : "—") + "</td></tr>";
     });
     $("decide").innerHTML = h + "</tbody>";
     var evs = (fc.events || []).map(function (e) { return e.name; }).join(", ");
-    $("decideNote").textContent = fc.day ? "for day " + fc.day + (evs ? " · " + evs : "") + " · safe pick assumes a fresh premium truck at " + price(invader) : "";
+    var cuts = (planCache.cuts || []).slice(0, 4).map(function (c) { return (names[c.id] || "?") + " " + price(c.p); }).join(", ");
+    $("decideNote").textContent = fc.day ? "for day " + fc.day + (evs ? " · " + evs : "") + (cuts ? " · undercut check: " + cuts : "") : "";
   }
 
   function renderMult(s) {
@@ -714,7 +823,7 @@ a { color: var(--bulb); }
   function render(s) {
     renderPhase(s);
     var rows = standingsRows(s);
-    renderMove(s); renderKpis(s, rows); renderDecide(s); renderStandings(s, rows); renderSpots(s); renderForecast(s); renderHeat(s);
+    renderMove(s); renderKpis(s, rows); renderWhere(s); renderDecide(s); renderStandings(s, rows); renderSpots(s); renderForecast(s); renderHeat(s);
     renderChart(s); renderMult(s); renderCrowds(s); renderTendencies(s); renderFeed(s);
     var mk = marketKey(s);
     $("histNote").textContent = "History: " + days(mk).length + " days in this browser";
