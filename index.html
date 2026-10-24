@@ -165,7 +165,7 @@ a { color: var(--bulb); }
   <section>
     <h2>Where should we go tomorrow? <small id="decideNote"></small></h2>
     <div class="panel tablewrap"><table class="decide" id="decide"></table>
-      <p class="note">Safe order: the best price that still keeps our customers if any rival parks here at its cheapest premium price from the last 4 days. Safe profit is what that order makes in the worst of those cases. Highest price on paper is what we'd make if nobody undercuts. Alone is the same spot with no rivals at all. Spots that were empty last night tend to fill up.</p></div>
+      <p class="note">Our pick weighs expected profit against the worst case if any rival parks here at its cheapest premium price from the last 4 days. Highest price on paper is what the priciest order makes if nobody undercuts. Alone is the same spot with no rivals at all. Since day 16, customers split between similar deals, hungry customers walk to nearby trucks, and leftovers get 25% of their cost back; the split is a best guess until we have a few nights of data.</p></div>
   </section>
 
   <section>
@@ -288,7 +288,7 @@ a { color: var(--bulb); }
     return (n < 0 ? "−$" : "$") + s;
   }
   function price(v) { return "$" + Number(v).toFixed(2); }
-  function profitOf(t) { return (t.sold || 0) * t.price - (t.meals || 0) * (COST[t.quality] || 0); }
+  function profitOf(t, d) { var c = COST[t.quality] || 0, left = Math.max(0, (t.meals || 0) - (t.sold || 0)); return (t.sold || 0) * t.price - (t.meals || 0) * c + (FEAT.salvage && d >= SALVAGE_FROM ? 0.25 * c * left : 0); }
   function marketKey(s) { return (s.mode || "live") + ":" + (s.market || 1); }
   function saveHistory() { try { localStorage.setItem(STORE_KEY, JSON.stringify(history)); } catch (e) {} }
 
@@ -338,7 +338,7 @@ a { color: var(--bulb); }
     });
     return trucks.map(function (t, i) {
       var w = where[t.id];
-      var delta = w ? profitOf(w.t) : (prevCash[t.id] ? t.cash - prevCash[t.id].cash : 0);
+      var delta = w ? profitOf(w.t, ld.day) : (prevCash[t.id] ? t.cash - prevCash[t.id].cash : 0);
       return { rank: i + 1, t: t, w: w, delta: delta };
     });
   }
@@ -389,7 +389,7 @@ a { color: var(--bulb); }
       var served = info.customers ? (info.customers - info.hungry) / info.customers : 0;
       var trucks = (info.trucks || []).slice().sort(function (a, b) { return b.sold - a.sold; });
       var body = trucks.length ? trucks.map(function (t) {
-        var thru = t.meals ? t.sold / t.meals : 0, pf = profitOf(t);
+        var thru = t.meals ? t.sold / t.meals : 0, pf = profitOf(t, ld.day);
         var col = thru >= 0.9 ? "var(--good)" : thru >= 0.6 ? "var(--warn)" : "var(--bad)";
         return '<div class="trow"><span class="nm"><span class="swatch" style="background:' + esc(colors[t.id] || "#888") + '"></span>' + esc(t.truck_name) + "</span>" +
           '<span class="pr"><span class="q ' + t.quality + '">' + t.quality + "</span> " + price(t.price) + "</span>" +
@@ -501,6 +501,7 @@ a { color: var(--bulb); }
     var tot = q[0] + q[1] + q[2];
     return { mu: mu, sd: P.sd, q: [q[0] / tot, q[1] / tot, q[2] / tot] };
   }
+  var FEAT = {}, TAU = 1.0, SALVAGE_FROM = 16;
   function allocate(C, prm, trucks) {
     var n = trucks.length, vals = trucks.map(function (t) { return QV[t.q] * t.rf - t.p; });
     var okIdx = []; for (var j = 0; j < n; j++) if (vals[j] >= -1e-9) okIdx.push(j);
@@ -516,52 +517,47 @@ a { color: var(--bulb); }
       for (var qi = 0; qi < 3; qi++) {
         var m = C * mass * prm.q[qi]; if (m <= 1e-9) continue;
         var acc = order.filter(function (j) { return trucks[j].p <= pk + 1e-9 && QRANK[trucks[j].q] >= qi; });
-        if (acc.length) types.push([m, acc, 0]);
+        if (acc.length) types.push({ m: m, acc: acc, w: null });
       }
     });
     var cap = trucks.map(function (t) { return t.cap; });
-    for (var it = 0; it < n + 2; it++) {
+    for (var it = 0; it < n + 3; it++) {
       var demand = trucks.map(function () { return 0; }), live = false;
       types.forEach(function (ty) {
-        if (ty[0] <= 1e-9) return;
-        while (ty[2] < ty[1].length && cap[ty[1][ty[2]]] - sold[ty[1][ty[2]]] <= 1e-9) ty[2]++;
-        if (ty[2] < ty[1].length) { demand[ty[1][ty[2]]] += ty[0]; live = true; }
+        ty.w = null;
+        if (ty.m <= 1e-9) return;
+        var open = ty.acc.filter(function (j) { return cap[j] - sold[j] > 1e-9; });
+        if (!open.length) return;
+        if (FEAT.fair_choice && open.length > 1) {
+          var vmax = vals[open[0]], ex = open.map(function (j) { return Math.exp((vals[j] - vmax) / TAU); });
+          var tot = ex.reduce(function (a, b) { return a + b; }, 0);
+          ty.w = open.map(function (j, i) { return [j, ex[i] / tot]; });
+        } else ty.w = [[open[0], 1]];
+        live = true;
+        ty.w.forEach(function (x) { demand[x[0]] += ty.m * x[1]; });
       });
       if (!live) break;
       var frac = demand.map(function (d, j) { return d > 1e-9 ? Math.min(1, (cap[j] - sold[j]) / d) : 1; });
       types.forEach(function (ty) {
-        if (ty[0] <= 1e-9 || ty[2] >= ty[1].length) return;
-        var j = ty[1][ty[2]], served = ty[0] * frac[j]; sold[j] += served; ty[0] -= served;
+        if (!ty.w) return;
+        var served = 0;
+        ty.w.forEach(function (x) { var v = ty.m * x[1] * frac[x[0]]; sold[x[0]] += v; served += v; });
+        ty.m -= served;
       });
     }
     return sold;
   }
+  function mealsFor(d, cost) { return Math.min(Math.floor(500 / cost), Math.round(d * (FEAT.salvage ? 1 : 0.92))); }
+  function net(p, cost, meals, sold) { var s = Math.min(sold, meals); return p * s - cost * meals + (FEAT.salvage ? 0.25 * cost * (meals - s) : 0); }
   function bestOrder(C, prm, myRep, rivals, quals) {
     var rf = repFactor(myRep), best = null;
     (quals || ["premium", "standard", "cheap"]).forEach(function (q) {
-      var cost = COST[q], maxMeals = Math.floor(500 / cost), ceil = Math.min(18, QV[q] * rf);
+      var cost = COST[q], ceil = Math.min(18, QV[q] * rf);
       for (var p = 4; p <= ceil + 1e-9; p += 0.25) {
         if (p <= cost) continue;
         var d = allocate(C, prm, [{ q: q, p: p, rf: rf, cap: 1e9 }].concat(rivals))[0];
-        var meals = Math.min(maxMeals, Math.round(d * 0.92));
-        var prof = p * Math.min(d, meals) - cost * meals;
+        var meals = mealsFor(d, cost), prof = net(p, cost, meals, d);
         if (meals > 0 && (!best || prof > best.profit)) best = { q: q, p: p, meals: meals, buyers: d, profit: prof };
-      }
-    });
-    return best;
-  }
-  function safeOrder(C, prm, myRep, rivals, invaderPrice, quals) {
-    var rf = repFactor(myRep), best = null, inv = { q: "premium", p: invaderPrice, rf: 1, cap: 90 };
-    (quals || ["premium", "standard"]).forEach(function (q) {
-      var cost = COST[q], maxMeals = Math.floor(500 / cost), ceil = Math.min(18, QV[q] * rf);
-      for (var p = 4; p <= ceil + 1e-9; p += 0.25) {
-        if (p <= cost) continue;
-        var d = allocate(C, prm, [{ q: q, p: p, rf: rf, cap: 1e9 }].concat(rivals))[0];
-        var meals = Math.min(maxMeals, Math.round(d * 0.92)); if (meals <= 0) continue;
-        var base = p * Math.min(d, meals) - cost * meals;
-        var dInv = allocate(C, prm, [{ q: q, p: p, rf: rf, cap: meals }].concat(rivals, [inv]))[0];
-        var worst = Math.min(base, p * dInv - cost * meals);
-        if (!best || worst > best.worst) best = { q: q, p: p, meals: meals, base: base, worst: worst };
       }
     });
     return best;
@@ -582,21 +578,21 @@ a { color: var(--bulb); }
   function robustOrder(C, prm, spot, myRep, rivals, cuts, reps, quals) {
     var rf = repFactor(myRep), best = null, top = null;
     (quals || ["premium", "standard"]).forEach(function (q) {
-      var cost = COST[q], maxMeals = Math.floor(500 / cost), ceil = Math.min(15, QV[q] * rf);
+      var cost = COST[q], ceil = Math.min(15, QV[q] * rf);
       for (var c100 = Math.ceil(cost * 100) + 5; c100 <= ceil * 100 + 1e-6; c100 += 5) {
         var p = c100 / 100;
         var d = allocate(C, prm, [{ q: q, p: p, rf: rf, cap: 1e9 }].concat(rivals))[0];
-        var meals = Math.min(maxMeals, Math.round(d * 0.92)); if (meals <= 0) continue;
-        var exp = p * Math.min(d, meals) - cost * meals, worst = exp, who = null;
+        var meals = mealsFor(d, cost); if (meals <= 0) continue;
+        var exp = net(p, cost, meals, d), worst = exp, who = null;
         cuts.forEach(function (c) {
           var others = rivals.filter(function (r) { return r.id !== c.id; });
           var inv = { q: "premium", p: c.p, rf: repFactor(repOf(reps, c.id, spot)), cap: 90 };
-          var v = p * allocate(C, prm, [{ q: q, p: p, rf: rf, cap: meals }].concat(others, [inv]))[0] - cost * meals;
+          var v = net(p, cost, meals, allocate(C, prm, [{ q: q, p: p, rf: rf, cap: meals }].concat(others, [inv]))[0]);
           if (v < worst - 0.5) { worst = v; who = c; }
         });
-        var rain = p * Math.min(allocate(C * 0.75, prm, [{ q: q, p: p, rf: rf, cap: 1e9 }].concat(rivals))[0], meals) - cost * meals;
-        var cand = { q: q, p: p, meals: meals, exp: exp, worst: worst, who: who, rain: rain };
-        if (!best || Math.round(worst) > Math.round(best.worst) || (Math.round(worst) === Math.round(best.worst) && exp > best.exp)) best = cand;
+        var rain = net(p, cost, meals, allocate(C * 0.75, prm, [{ q: q, p: p, rf: rf, cap: 1e9 }].concat(rivals))[0]);
+        var cand = { q: q, p: p, meals: meals, exp: exp, worst: worst, who: who, rain: rain, score: 0.6 * exp + 0.4 * worst };
+        if (!best || cand.score > best.score + 1e-9) best = cand;
         if (!top || exp > top.exp) top = cand;
       }
     });
@@ -629,36 +625,46 @@ a { color: var(--bulb); }
     var C = exp[HOME] || 0;
     if (!C) { $("move").innerHTML = '<div class="label">The move</div><p class="why">Waiting for the next forecast from the game.</p>'; return; }
     var rows = planRows(s), cuts = planCache.cuts, reps = planCache.reps;
-    var home = rows.filter(function (r) { return r.k === HOME; })[0];
-    var myRep = home.myRep, premHere = home.riv.filter(function (t) { return t.quality === "premium"; });
+    var home = rows.filter(function (r) { return r.k === HOME; })[0], myRep = home.myRep;
+    var mk = marketKey(s), trip = [];
+    days(mk).slice(-3).forEach(function (d) {
+      ((((history[mk][d] || {}).spots || {})[HOME] || {}).trucks || []).forEach(function (t) { if (t.id !== OURS && t.quality === "premium") trip.push({ d: d, t: t }); });
+    });
     var nightsTo90 = Math.max(0, Math.ceil((90 - myRep) / 5)), phase, why, quals;
     if (daysLeft < 3) {
       quals = ["premium", "standard"]; phase = "Endgame";
-      why = "Only " + (daysLeft + 1) + " day" + (daysLeft ? "s" : "") + " left, so reputation stops mattering. Take the safe order that makes the most money.";
-    } else if (premHere.length || myRep < 90) {
-      quals = ["premium"]; phase = premHere.length ? "Defend" : "Build reputation";
-      why = premHere.length
-        ? esc(premHere[0].truck_name) + " sold premium at North Res last night (" + price(premHere[0].price) + "). We stay premium and price to keep our customers."
-        : "Our North Res reputation is " + Math.round(myRep) + ". We sell premium (+5 a night) until it reaches 90, about " + nightsTo90 + " more night" + (nightsTo90 === 1 ? "" : "s") + ". Then we switch to standard, which makes more per meal.";
+      why = "Only " + (daysLeft + 1) + " day" + (daysLeft ? "s" : "") + " left, so reputation stops mattering. Take the order that pays best after the undercut check.";
+    } else if (trip.length) {
+      var lastTrip = trip[trip.length - 1];
+      quals = ["premium"]; phase = "Defend";
+      why = esc(lastTrip.t.truck_name) + " sold premium at North Res on day " + lastTrip.d + " (" + price(lastTrip.t.price) + "). We stay premium until North Res has been clear of premium trucks for 3 nights, because a cheap premium truck takes almost every customer from standard.";
+    } else if (myRep < 90) {
+      quals = ["premium"]; phase = "Build reputation";
+      why = "Our North Res reputation is " + Math.floor(myRep) + ". We sell premium (+5 a night) until it reaches 90, about " + nightsTo90 + " more night" + (nightsTo90 === 1 ? "" : "s") + ".";
     } else {
-      quals = ["standard"]; phase = "Cash in";
-      why = "Reputation is " + Math.round(myRep) + ", so standard beats normal premium trucks here and costs $1.75 less to make. Switch back to premium the night a premium truck parks here.";
+      quals = ["premium", "standard"]; phase = "Cash in";
+      why = "Reputation is " + Math.round(myRep) + " and no premium truck has parked at North Res for 3 nights, so we take whichever of premium or standard pays best after the undercut check. The first night a premium truck parks here, we go back to premium.";
     }
     var pick = robustOrder(C, home.prm, HOME, myRep, home.rivals, cuts, reps, quals);
     var line = function (o) { return o.q + " " + price(o.p) + " · " + o.meals + " meals"; };
     var notes = [];
-    if (pick.who) notes.push("If " + esc(names[pick.who.id] || "a rival") + " shows up at " + price(pick.who.p) + ", this drops to " + money(pick.worst, true) + ". No price here fully avoids that.");
+    if (pick.who) notes.push("If " + esc(names[pick.who.id] || "a rival") + " shows up at " + price(pick.who.p) + ", this makes about " + money(pick.worst, true) + " instead.");
     else if (cuts.length) notes.push("Safe if a rival undercuts: " + cuts.slice(0, 3).map(function (c) { return esc(names[c.id] || "?") + " at " + price(c.p); }).join(", ") + " (their cheapest premium in the last 4 days) still can’t take our customers.");
     var tp = pick.top;
-    if (tp && tp.p > pick.p + 0.01 && tp.exp > pick.exp + 1 && tp.who) notes.push("Why not higher: " + line(tp) + " makes " + money(tp.exp, true) + " if nobody undercuts, but " + money(tp.worst, true) + " if " + esc(names[tp.who.id] || "a rival") + " shows up at " + price(tp.who.p) + ".");
+    if (tp && tp.exp > pick.exp + 1 && tp.who) notes.push("Why not " + line(tp) + ": it makes " + money(tp.exp, true) + " if nobody undercuts, but " + money(tp.worst, true) + " if " + esc(names[tp.who.id] || "a rival") + " shows up at " + price(tp.who.p) + ".");
     var rainP = (fc.weather || {}).rain;
     notes.push("If it rains" + (rainP != null ? " (" + Math.round(rainP * 100) + "% chance)" : "") + ": about " + money(pick.rain, true) + ", since rain cuts crowds by about a quarter.");
     var mult = EVENT_MULT.filter(function (e) { return e.key === (fc.events || []).map(eventKey).sort().join("+"); })[0];
-    notes.push("North Res expects " + C + " people" + (mult && mult.m[HOME] ? ", " + mult.m[HOME].toFixed(1) + "× a normal night (" + mult.name + ")" : "") + ". The forecast has run high here, so we cook a little under it.");
+    notes.push("North Res expects " + C + " people" + (mult && mult.m[HOME] ? ", " + mult.m[HOME].toFixed(1) + "× a normal night (" + mult.name + ")" : "") + ".");
     notes.push(home.riv.length ? "At North Res last night: " + home.riv.map(function (t) { return esc(t.truck_name) + " " + t.quality + " " + price(t.price) + " (sold " + t.sold + ")"; }).join(", ") + "." : "Nobody else parked at North Res last night.");
-    var other = rows.filter(function (r) { return r.k !== HOME && r.safe; }).sort(function (a, b) { return b.safe.worst - a.safe.worst; })[0];
-    if (other && other.safe.worst > pick.worst + 40) notes.push("Best safe option elsewhere: " + SPOT_NAMES[other.k] + " " + line(other.safe) + " → " + money(other.safe.exp, true) + ". Full table below.");
-    $("move").innerHTML = '<div class="label">The move for day ' + day + " · " + phase + '</div><div class="order">North Res · ' + line(pick) + '</div><div class="money">Expected ' + money(pick.exp, true) + ' <span class="co">· reputation ' + (pick.q === "premium" ? "+5" : "+2") + '</span></div><p class="why">' + why + "</p><ul>" + notes.map(function (n) { return "<li>" + n + "</li>"; }).join("") + "</ul>";
+    var rules = [];
+    if (FEAT.fair_choice) rules.push("customers split between similar deals");
+    if (FEAT.walk_over) rules.push("hungry customers walk to nearby trucks");
+    if (FEAT.salvage) rules.push("leftovers get 25% of their cost back, so we cook to the full forecast");
+    if (rules.length) notes.push("New rules: " + rules.join("; ") + ". The split is a best guess until we’ve seen a few nights of it.");
+    var other = rows.filter(function (r) { return r.k !== HOME && r.safe; }).sort(function (a, b) { return b.safe.score - a.safe.score; })[0];
+    if (other && other.safe.score > pick.score + 40) notes.push("Better balanced option elsewhere: " + SPOT_NAMES[other.k] + " " + line(other.safe) + " → " + money(other.safe.exp, true) + " (worst " + money(other.safe.worst, true) + "). Full table below.");
+    $("move").innerHTML = '<div class="label">The move for day ' + day + " · " + phase + '</div><div class="order">North Res · ' + line(pick) + '</div><div class="money">Expected ' + money(pick.exp, true) + ' <span class="co">· worst ' + money(pick.worst, true) + " · reputation " + (pick.q === "premium" ? "+5" : "+2") + '</span></div><p class="why">' + why + "</p><ul>" + notes.map(function (n) { return "<li>" + n + "</li>"; }).join("") + "</ul>";
   }
 
   var MAP_POS = { northres: [420, 66], highst: [526, 140], union: [468, 272], oval: [318, 196], thompson: [190, 272], stadium: [86, 160] };
@@ -713,7 +719,7 @@ a { color: var(--bulb); }
       var day = history[mk][d], mine = null, where = null;
       Object.keys(day.spots || {}).forEach(function (k) { (day.spots[k].trucks || []).forEach(function (t) { if (t.id === OURS) { mine = t; where = k; } }); });
       var tr = day.trucks || {}, ids = Object.keys(tr).sort(function (a, b) { return tr[b].cash - tr[a].cash; }), rank = ids.indexOf(OURS) + 1;
-      var pf = mine ? profitOf(mine) : 0;
+      var pf = mine ? profitOf(mine, d) : 0;
       h += "<tr><td>Day " + d + "</td><td>" + (where ? SPOT_NAMES[where] : '<span class="co">sat out</span>') + "</td><td>" + (mine ? qtag(mine.quality) + " " + price(mine.price) : "—") +
         '</td><td class="num">' + (mine ? mine.sold + "/" + mine.meals : "—") + '</td><td class="num ' + (pf > 0 ? "pos" : pf < 0 ? "neg" : "") + '">' + (mine ? money(pf, true) : "—") +
         '</td><td class="num">' + (rank || "—") + "</td></tr>";
@@ -725,16 +731,17 @@ a { color: var(--bulb); }
   function renderDecide(s) {
     var fc = s.forecast || {}, names = {};
     (s.trucks || []).forEach(function (t) { names[t.id] = t.truck_name; });
-    var rows = planRows(s).slice().sort(function (a, b) { return (b.safe ? b.safe.worst : -1e9) - (a.safe ? a.safe.worst : -1e9); });
+    var rows = planRows(s).slice().sort(function (a, b) { return (b.safe ? b.safe.score : -1e9) - (a.safe ? a.safe.score : -1e9); });
     var top = rows[0];
-    var h = '<thead><tr><th>Spot</th><th class="num">Crowd tomorrow</th><th>Rivals last night</th><th class="num">Our rep</th><th>Safe order</th><th class="num">Safe profit</th><th>Highest price on paper</th><th class="num">Alone</th></tr></thead><tbody>';
+    var h = '<thead><tr><th>Spot</th><th class="num">Crowd tomorrow</th><th>Rivals last night</th><th class="num">Our rep</th><th>Our pick</th><th class="num">Expected</th><th class="num">Worst case</th><th>Highest price on paper</th><th class="num">Alone</th></tr></thead><tbody>';
     rows.forEach(function (r) {
       var sf = r.safe, tp = sf && sf.top;
       var riv = r.riv.length ? r.riv.map(function (t) { return esc(t.truck_name) + " " + t.quality + " " + price(t.price); }).join(" · ") : "none";
       h += '<tr class="' + (r === top ? "best" : "") + '"><td>' + SPOT_NAMES[r.k] + (r.k === HOME ? '<span class="tag home">home</span>' : "") + (r === top ? '<span class="tag top">top</span>' : "") + "</td>" +
         '<td class="num">' + r.C + '</td><td class="riv">' + riv + '</td><td class="num">' + Math.round(r.myRep) + "</td>" +
         "<td>" + (sf ? qtag(sf.q) + " " + price(sf.p) + " · " + sf.meals + " meals" : "—") + "</td>" +
-        '<td class="pf ' + (sf && sf.worst >= 0 ? "pos" : "neg") + '">' + (sf ? money(sf.worst, true) : "—") + "</td>" +
+        '<td class="pf ' + (sf && sf.exp >= 0 ? "pos" : "neg") + '">' + (sf ? money(sf.exp, true) : "—") + "</td>" +
+        '<td class="num ' + (sf && sf.worst >= 0 ? "pos" : "neg") + '">' + (sf ? money(sf.worst, true) : "—") + "</td>" +
         "<td>" + (tp ? qtag(tp.q) + " " + price(tp.p) + " → " + money(tp.exp, true) + ' <span class="co">worst ' + money(tp.worst, true) + "</span>" : "—") + "</td>" +
         '<td class="num">' + (r.alone ? money(r.alone.profit, true) : "—") + "</td></tr>";
     });
@@ -782,7 +789,7 @@ a { color: var(--bulb); }
       Object.keys(sp).forEach(function (k) {
         (sp[k].trucks || []).forEach(function (t) {
           var st = stats[t.id] = stats[t.id] || { name: t.truck_name, n: 0, spots: {}, q: { cheap: 0, standard: 0, premium: 0 }, price: 0, sold: 0, meals: 0, profit: 0, lastDay: 0, last: null };
-          st.n++; st.spots[k] = (st.spots[k] || 0) + 1; st.q[t.quality]++; st.price += t.price; st.sold += t.sold; st.meals += t.meals; st.profit += profitOf(t);
+          st.n++; st.spots[k] = (st.spots[k] || 0) + 1; st.q[t.quality]++; st.price += t.price; st.sold += t.sold; st.meals += t.meals; st.profit += profitOf(t, d);
           if (d >= st.lastDay) { st.lastDay = d; st.last = k; }
         });
       });
@@ -821,6 +828,7 @@ a { color: var(--bulb); }
   }
 
   function render(s) {
+    FEAT = s.features || {}; if (s.mode === "final") SALVAGE_FROM = 1;
     renderPhase(s);
     var rows = standingsRows(s);
     renderMove(s); renderKpis(s, rows); renderWhere(s); renderDecide(s); renderStandings(s, rows); renderSpots(s); renderForecast(s); renderHeat(s);
